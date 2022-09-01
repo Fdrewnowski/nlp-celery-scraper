@@ -1,0 +1,59 @@
+version: '3'
+services:
+    rabbit_2:
+        image: rabbitmq:latest
+        container_name: rabbitmq_2
+        hostname: rabbit_2
+        environment:
+            - RABBITMQ_DEFAULT_USER=admin
+            - RABBITMQ_DEFAULT_PASS=mypass
+        ports:
+            - 5672:5672
+            - 15672:15672
+
+    influxdb:
+        container_name: influx_db 
+        image: influxdb:latest
+        ports:
+            - '8086:8086'
+        volumes:
+            - ./influxdb/data:/var/lib/influxdb 
+
+    mongo:
+        container_name: mongo 
+        image: mongo
+        ports:
+            - '27017:27017'
+
+    mongo-express:
+        container_name: mongo_express
+        image: mongo-express
+        ports:
+            - 8081:8081
+        environment:
+            ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/
+        
+
+    worker:
+        container_name: worker
+        build:
+            context: .
+            dockerfile: dockerfile
+        volumes:
+            - .:/app
+        ports:
+            - 9091:9091
+        depends_on:
+            - rabbit_2
+            - influxdb
+            - mongo
+
+    grafana:
+        container_name: grafana_scraper
+        image: grafana/grafana
+        volumes:
+            - ./grafana:/var/lib/grafana
+        ports:
+            - 3000:3000
+        depends_on:
+            - influxdb
